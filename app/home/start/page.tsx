@@ -181,14 +181,24 @@ export default function StartPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#fff" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#fff" }}>
       {/* Header */}
       <div style={{ background: "var(--clr-red-900)", padding: "env(safe-area-inset-top, 12px) 0 12px", display: "flex", justifyContent: "center" }}>
         <Image src="/logo_tindertec.png" alt="ConectaTec" width={80} height={80} style={{ objectFit: "contain" }} />
       </div>
 
       {/* Card stack */}
-      <div style={{ flex: 1, position: "relative", padding: 24, paddingBottom: 100 }}>
+      <div
+        style={{
+          flex: 1,
+          position: "relative",
+          padding: 16,
+          paddingBottom: 120,
+          maxWidth: 420,
+          margin: "0 auto",
+          width: "100%",
+        }}
+      >
         {cards.slice(0, 3).map((card, i) => {
           const isTop = i === 0;
           const zIndex = 10 - i;
@@ -207,6 +217,8 @@ export default function StartPage() {
               style={{
                 position: "absolute",
                 inset: 0,
+                maxHeight: "calc(100vh - 220px)", // 🔥 magia aquí
+                margin: "0 auto",
                 zIndex,
                 transform: `scale(${scale}) translateY(${translateY}px)`,
                 transformOrigin: "center top",
@@ -247,7 +259,19 @@ export default function StartPage() {
       </div>
 
       {/* Button row */}
-      <div style={{ padding: "0 40px 16px", display: "flex", gap: 24, justifyContent: "center" }}>
+      <div
+        style={{
+          position: "fixed",
+          bottom: "env(safe-area-inset-bottom, 16px)",
+          left: 0,
+          right: 0,
+          display: "flex",
+          gap: 24,
+          justifyContent: "center",
+          zIndex: 50,
+          pointerEvents: "auto",
+        }}
+      >
         {isPremium && (
           <button
             onClick={() => {
