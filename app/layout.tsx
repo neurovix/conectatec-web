@@ -28,9 +28,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastContext.Provider value={showToast}>
           {children}
         </ToastContext.Provider>
-
-        {/* Global toast */}
-        <div className={`toast ${toast ? "show" : ""}`}>{toast}</div>
       </body>
     </html>
   );

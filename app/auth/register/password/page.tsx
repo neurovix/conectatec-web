@@ -79,7 +79,6 @@ export default function PasswordPage() {
 
       /* 3. Insert user row */
       const { error: userErr } = await supabase.from("users").insert({
-        id_user:           userId,
         name:              data.name,
         age:               data.age,
         description:       data.description ?? null,
@@ -90,6 +89,7 @@ export default function PasswordPage() {
         custom_degree:     customDegree,
         id_looking_for:    getLookingForId(data.lookingFor!),
         id_interest:       INTEREST_MAP[data.interest!],
+        is_premium:        false,
       });
       if (userErr) throw userErr;
 
