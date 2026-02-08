@@ -27,7 +27,7 @@ export default function StartPage() {
   const topCardRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef({ startX: 0, startY: 0, isDragging: false, offsetX: 0, offsetY: 0 });
 
-  // header height used to calc remaining area
+  // Altura del header
   const HEADER_HEIGHT = 64;
 
   useEffect(() => {
@@ -68,7 +68,6 @@ export default function StartPage() {
         p_offset: offset,
       });
 
-      // supabase rpc usually returns res.data
       if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
         setHasMore(false);
       } else {
@@ -102,7 +101,6 @@ export default function StartPage() {
 
       if (!isPremium) {
         const canSwipeRes = await supabase.rpc("check_and_add_swipe", { p_user_id: currentUserId });
-        // depending on your RPC response, check the boolean properly:
         const canSwipe = canSwipeRes?.data ?? false;
         if (!canSwipe) {
           showToast("Likes agotados. Vuélvete premium o espera hasta mañana");
@@ -124,7 +122,8 @@ export default function StartPage() {
     const card = topCardRef.current;
     if (card) {
       card.style.transition = "transform 0.35s ease, opacity 0.35s ease";
-      card.style.transform = `translateX(${direction === "right" ? 400 : -400}px) rotate(${direction === "right" ? 30 : -30}deg)`;
+      // CORRECCIÓN 1: Forzamos translate Y a 0px para que salga recta hacia el lado
+      card.style.transform = `translate(${direction === "right" ? 400 : -400}px, 0px) rotate(${direction === "right" ? 30 : -30}deg)`;
       card.style.opacity = "0";
       card.style.pointerEvents = "none";
     }
@@ -145,19 +144,20 @@ export default function StartPage() {
     try {
       (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     } catch (err) {
-      // ignore if not supported
+      // ignore
     }
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!dragStateRef.current.isDragging) return;
     const dx = e.clientX - dragStateRef.current.startX;
-    const dy = e.clientY - dragStateRef.current.startY;
+    // CORRECCIÓN 2: Ignoramos el movimiento en Y (dy) para el transform
     dragStateRef.current.offsetX = dx;
-    dragStateRef.current.offsetY = dy;
+    
     if (topCardRef.current) {
       const rot = dx * 0.08;
-      topCardRef.current.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      // Solo nos movemos en X, dejamos Y en 0px
+      topCardRef.current.style.transform = `translate(${dx}px, 0px) rotate(${rot}deg)`;
     }
   }
 
@@ -177,7 +177,7 @@ export default function StartPage() {
     } else {
       if (topCardRef.current) {
         topCardRef.current.style.transition = "transform 0.25s cubic-bezier(.2,.8,.2,1)";
-        topCardRef.current.style.transform = "translate(0, 0) rotate(0deg)";
+        topCardRef.current.style.transform = "translate(0px, 0px) rotate(0deg)";
       }
     }
   }
@@ -193,7 +193,7 @@ export default function StartPage() {
 
   if (!loading && cards.length === 0 && !hasMore) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#fff" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "#fff" }}>
         <div style={{ background: "var(--clr-red-900)", padding: `env(safe-area-inset-top, 12px) 0 12px`, display: "flex", justifyContent: "center" }}>
           <Image src="/logo_tindertec.png" alt="ConectaTec" width={80} height={80} style={{ objectFit: "contain" }} />
         </div>
@@ -207,15 +207,18 @@ export default function StartPage() {
   return (
     <div
       style={{
-        height: "100vh", // important para mobile
+        // CORRECCIÓN 3: Usar 100dvh asegura que ocupe EXACTAMENTE la pantalla visible del móvil
+        height: "100dvh", 
         width: "100%",
         background: "#fff",
-        position: "relative",
-        overflow: "hidden",
-        WebkitOverflowScrolling: "touch",
+        position: "fixed", // Fija la pantalla para evitar rebote elástico (rubber banding)
+        inset: 0,
+        overflow: "hidden", // Corta cualquier cosa que quiera salirse
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Header (overlayed in flow) */}
+      {/* Header */}
       <div
         style={{
           height: HEADER_HEIGHT,
@@ -226,125 +229,130 @@ export default function StartPage() {
           justifyContent: "center",
           paddingTop: "env(safe-area-inset-top, 0px)",
           zIndex: 30,
+          flexShrink: 0,
         }}
       >
         <Image src="/logo_tindertec.png" alt="ConectaTec" width={64} height={64} style={{ objectFit: "contain" }} />
       </div>
 
-      {/* Main area (remaining height) */}
+      {/* Area Principal */}
       <div
         style={{
-          height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+          flex: 1, // Ocupa todo el espacio restante automáticamente
+          position: "relative",
+          width: "100%",
+          overflow: "hidden", // Asegura que nada genere scroll
           display: "flex",
-          flexDirection: "column",
-          padding: "12px 16px",
-          boxSizing: "border-box",
+          flexDirection: "column"
         }}
       >
-        {/* Swiper area = 90% of this main area */}
+        {/* Contenedor de Cartas */}
         <div
           style={{
-            flex: 9, // 90%
-            position: "relative",
-            marginBottom: 8,
-            minHeight: 0, // allows children to scroll if needed
+            position: "absolute", // Absolute para llenar el padre sin empujar
+            inset: 0, // top, right, bottom, left = 0
+            padding: "12px", // Margen interno para que la carta no toque los bordes
+            paddingBottom: "16px",
+            boxSizing: "border-box",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <div style={{ position: "absolute", inset: 0 }}>
-            {cards.slice(0, 3).length === 0 && !loading ? (
-              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <p style={{ color: "var(--clr-grey-600)" }}>No hay perfiles nuevos</p>
-              </div>
-            ) : (
-              cards.slice(0, 3).map((card, i) => {
-                const isTop = i === 0;
-                const zIndex = 10 - i;
-                const scale = 1 - i * 0.04;
-                const translateY = i * 10;
+          {cards.slice(0, 3).length === 0 && !loading ? (
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <p style={{ color: "var(--clr-grey-600)" }}>No hay perfiles nuevos</p>
+            </div>
+          ) : (
+            cards.slice(0, 3).map((card, i) => {
+              const isTop = i === 0;
+              const zIndex = 10 - i;
+              const scale = 1 - i * 0.04; 
+              // Desplazamiento visual para las cartas de atrás (solo visual, no afecta layout)
+              const translateY = i * 10; 
 
-                return (
+              return (
+                <div
+                  key={card.id_user}
+                  ref={isTop ? topCardRef : null}
+                  onPointerDown={isTop ? handlePointerDown : undefined}
+                  onPointerMove={isTop ? handlePointerMove : undefined}
+                  onPointerUp={isTop ? handlePointerUp : undefined}
+                  onPointerCancel={isTop ? handlePointerUp : undefined}
+                  onClick={isTop ? () => router.push(`/home/user-detail/${card.id_user}?source=swiper`) : undefined}
+                  style={{
+                    position: "absolute",
+                    width: "calc(100% - 24px)", // 100% menos el padding del contenedor
+                    height: "calc(100% - 50px)", // 100% menos el padding vertical
+                    zIndex,
+                    // Inicialmente solo tiene la escala y el offset de pila
+                    transform: `scale(${scale}) translateY(${translateY}px)`,
+                    transformOrigin: "center bottom",
+                    touchAction: "none", // CRITICO: evita que el navegador intente hacer scroll nativo
+                    cursor: isTop ? "grab" : "default",
+                    pointerEvents: isTop ? "auto" : "none",
+                  }}
+                >
                   <div
-                    key={card.id_user}
-                    ref={isTop ? topCardRef : null}
-                    onPointerDown={isTop ? handlePointerDown : undefined}
-                    onPointerMove={isTop ? handlePointerMove : undefined}
-                    onPointerUp={isTop ? handlePointerUp : undefined}
-                    onPointerCancel={isTop ? handlePointerUp : undefined}
-                    onClick={isTop ? () => router.push(`/home/user-detail/${card.id_user}?source=swiper`) : undefined}
                     style={{
-                      position: "absolute",
-                      inset: 0,
-                      zIndex,
-                      transform: `scale(${scale}) translateY(${translateY}px)`,
-                      transformOrigin: "center top",
-                      touchAction: "none",
-                      cursor: isTop ? "grab" : "default",
-                      pointerEvents: isTop ? "auto" : "none",
-                      display: "flex",
-                      alignItems: "stretch",
-                      justifyContent: "center",
-                      padding: 0,
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 20,
+                      overflow: "hidden",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+                      background: "var(--clr-grey-300)",
+                      position: "relative",
                     }}
                   >
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: 20,
-                        overflow: "hidden",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
-                        background: "var(--clr-grey-300)",
-                        position: "relative",
-                      }}
-                    >
-                      {card.photo_url ? (
-                        <Image src={card.photo_url} alt={card.name} fill style={{ objectFit: "cover" }} priority={i === 0} />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", background: "linear-gradient(180deg,#eee,#ddd)" }} />
+                    {card.photo_url ? (
+                      <Image src={card.photo_url} alt={card.name} fill style={{ objectFit: "cover" }} priority={i === 0} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: "linear-gradient(180deg,#eee,#ddd)" }} />
+                    )}
+
+                    {/* Gradiente más oscuro abajo para los botones */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 35%, transparent 60%)" }} />
+
+                    {/* Info del usuario subida un poco para dejar sitio a los botones */}
+                    <div style={{ position: "absolute", bottom: 130, left: 16, right: 16, pointerEvents: "none" }}>
+                      <h2 style={{ color: "#fff", fontSize: 26, fontWeight: 700, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
+                        {card.name}, {card.age}
+                      </h2>
+                      {card.degree_name && (
+                        <p style={{ color: "#eee", fontSize: 17, margin: "4px 0 0", fontWeight: 500, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
+                          {card.degree_name}
+                        </p>
                       )}
-
-                      {/* Gradient overlay */}
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent 45%)" }} />
-
-                      {/* Info */}
-                      <div style={{ position: "absolute", bottom: 18, left: 16, right: 16 }}>
-                        <h2 style={{ color: "#fff", fontSize: 24, fontWeight: 700, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
-                          {card.name}, {card.age}
-                        </h2>
-                        {card.degree_name && (
-                          <p style={{ color: "#fff", fontSize: 16, margin: "6px 0 0", fontWeight: 500, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
-                            {card.degree_name}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
-        {/* Button row = 10% of main area */}
+        {/* Botones Flotantes (Overlay) */}
         <div
           style={{
-            flex: 1, // 10%
+            position: "absolute",
+            bottom: 90, // Separación del borde inferior
+            left: 0,
+            right: 0,
             display: "flex",
-            gap: 18,
+            gap: 20,
             justifyContent: "center",
             alignItems: "center",
-            background: "#fff",
-            paddingBottom: "env(safe-area-inset-bottom, 8px)",
-            boxSizing: "border-box",
+            zIndex: 40,
+            pointerEvents: "none", // Permite tocar la carta a través del espacio vacío
+            paddingBottom: "env(safe-area-inset-bottom, 0px)" // Respetar la barra de inicio de iPhone
           }}
         >
           {isPremium && (
             <button
               onClick={() => showToast("Función de retroceder próximamente")}
-              aria-label="Retroceder"
               style={{
-                width: 56,
-                height: 56,
+                width: 50,
+                height: 50,
                 borderRadius: "50%",
                 border: "none",
                 background: "#fff",
@@ -354,37 +362,37 @@ export default function StartPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
-                flexShrink: 0,
+                boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
+                pointerEvents: "auto",
               }}
             >
               ↶
             </button>
           )}
+          
           <button
             onClick={() => handleSwipe("left")}
-            aria-label="No"
             style={{
               width: 64,
               height: 64,
               borderRadius: "50%",
               border: "none",
               background: "#fff",
-              color: "var(--clr-grey-700)",
+              color: "#FF4D4D",
               fontSize: 28,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
-              flexShrink: 0,
+              boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
+              pointerEvents: "auto",
             }}
           >
             ✕
           </button>
+          
           <button
             onClick={() => handleSwipe("right")}
-            aria-label="Like"
             style={{
               width: 64,
               height: 64,
@@ -392,13 +400,13 @@ export default function StartPage() {
               border: "none",
               background: "var(--clr-pink)",
               color: "#fff",
-              fontSize: 28,
+              fontSize: 30,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 8px 20px rgba(233,30,99,0.28)",
-              flexShrink: 0,
+              boxShadow: "0 8px 20px rgba(233,30,99,0.4)",
+              pointerEvents: "auto",
             }}
           >
             ❤
