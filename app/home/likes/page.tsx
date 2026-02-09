@@ -32,8 +32,8 @@ export default function LikesPage() {
 
       if (premium) {
         const likesRes = await supabase.rpc("get_incoming_likes_no_match", { p_user_id: userId });
-        if (likesRes) {
-          const list: LikeUser[] = likesRes.map((u: any) => {
+        if (likesRes.data) {
+          const list: LikeUser[] = likesRes.data.map((u: any) => {
             const photos = u.user_photos ?? [];
             return {
               id_user: u.id_user,
