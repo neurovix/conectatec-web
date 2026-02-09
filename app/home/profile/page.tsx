@@ -20,6 +20,12 @@ export default function ProfilePage() {
   const [isPremium, setIsPremium] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showCreatorsModal, setShowCreatorsModal] = useState(false);
+
+  const creators = [
+    { name: "Fernando Vazquez", email: "fervazquez@neurovix.com.mx", role: "Fundador y Programador" },
+    { name: "Octavio Valdes", email: "ovaldesfigueroa@gmail.com", role: "Marketing" },
+  ];
 
   useEffect(() => {
     loadUserInfo();
@@ -299,9 +305,132 @@ export default function ProfilePage() {
         {/* Footer */}
         <div style={{ textAlign: "center", color: "var(--clr-grey-500)", fontSize: 12 }}>
           <p style={{ margin: 0 }}>Version 1.0.0</p>
-          <p style={{ margin: "4px 0 0" }}>© {new Date().getFullYear()} Aplicación creada por <span style={{ color: "var(--clr-pink)", fontWeight: 600 }}>Neurovix</span></p>
+          <p style={{ margin: "4px 0 0" }}>
+            © {new Date().getFullYear()} Aplicación creada por{" "}
+            <button
+              onClick={() => setShowCreatorsModal(true)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--clr-pink)",
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: 0,
+                textDecoration: "underline",
+              }}
+            >
+              Neurovix
+            </button>
+          </p>
         </div>
       </div>
+
+      {/* Modal de Creadores */}
+      {showCreatorsModal && (
+        <div
+          onClick={() => setShowCreatorsModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 24,
+              padding: 24,
+              maxWidth: 500,
+              width: "100%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--clr-grey-800)", margin: 0 }}>Equipo Neurovix</h2>
+              <button
+                onClick={() => setShowCreatorsModal(false)}
+                style={{
+                  background: "var(--clr-grey-200)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: 18,
+                  color: "var(--clr-grey-600)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Creadores */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+              {creators.map((creator, index) => (
+                <div
+                  key={index}
+                  style={{
+                    background: "var(--clr-grey-50)",
+                    borderRadius: 16,
+                    padding: 16,
+                    border: "1px solid var(--clr-grey-200)",
+                  }}
+                >
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--clr-grey-800)", margin: "0 0 4px" }}>{creator.name}</h3>
+                  <p style={{ fontSize: 14, color: "var(--clr-red-900)", fontWeight: 600, margin: "0 0 8px" }}>{creator.role}</p>
+                  <a
+                    href={`mailto:${creator.email}`}
+                    style={{
+                      fontSize: 13,
+                      color: "var(--clr-pink)",
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    📧 {creator.email}
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            {/* Botón */}
+            <button
+              onClick={() => window.open("https://neurovix.com.mx", "_blank")}
+              style={{
+                width: "100%",
+                background: "linear-gradient(135deg, var(--clr-red-800), var(--clr-red-900))",
+                color: "#fff",
+                border: "none",
+                borderRadius: 16,
+                padding: "16px 24px",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              Ver página de empresa 🚀
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,40 +1,15 @@
 "use client";
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import { ToastContext } from "@/app/layout";
 
 export default function PremiumPage() {
   const router = useRouter();
-  const showToast = useContext(ToastContext);
   const [processing, setProcessing] = useState(false);
 
-  async function handleSubscribe(plan: "Semanal" | "Mensual" | "Semestral", priceInCents: number) {
+  function handleSubscribe(plan: "Semanal" | "Mensual" | "Semestral", price: string) {
     setProcessing(true);
-    try {
-      const supabase = createClient();
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("No user");
-
-      // Stripe Payment (Web only uses Stripe)
-      // For simplicity, we'll just mark the user premium — real Stripe integration would go here
-      // TODO: Integrate actual Stripe checkout flow
-
-      const now = new Date();
-      let premiumUntil: Date;
-      if (plan === "Semanal") premiumUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      else if (plan === "Mensual") premiumUntil = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      else premiumUntil = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
-
-      await supabase.from("users").update({ is_premium: true, premium_until: premiumUntil.toISOString() }).eq("id_user", userId);
-
-      showToast("¡Pago exitoso! Ahora eres Premium 🎉");
-      setTimeout(() => router.replace("/home/start"), 1500);
-    } catch {
-      showToast("Error al procesar el pago");
-    } finally {
-      setProcessing(false);
-    }
+    // Redirigir a la página de checkout con los parámetros del plan
+    router.push(`/home/checkout?plan=${plan}&price=${price}`);
   }
 
   return (
@@ -97,7 +72,7 @@ export default function PremiumPage() {
                 <span style={{ textAlign: "center", color: "var(--clr-grey-700)" }}>{b.normal}</span>
                 <span style={{ textAlign: "center", fontWeight: 700, color: "var(--clr-pink-accent)" }}>{b.premium}</span>
               </div>
-              {i < 4 && <div style={{ height: 1, background: "var(--clr-grey-200)", margin: "0 20px" }} />}
+              {i < 3 && <div style={{ height: 1, background: "var(--clr-grey-200)", margin: "0 20px" }} />}
             </div>
           ))}
         </div>
@@ -105,16 +80,16 @@ export default function PremiumPage() {
         {/* Plans */}
         <div style={{ background: "#fff", borderRadius: 20, padding: 20, marginTop: 30, boxShadow: "0 10px 20px rgba(0,0,0,0.08)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           {[
-            { title: "Semanal", days: "7 dias", price: "19.99 MXN", cents: 2000 },
-            { title: "Mensual", days: "30 dias", price: "59.99 MXN", cents: 5000 },
-            { title: "Semestral", days: "180 dias", price: "99.99 MXN", cents: 10000 },
+            { title: "Semanal", days: "7 dias", price: "19.99 MXN" },
+            { title: "Mensual", days: "30 dias", price: "59.99 MXN" },
+            { title: "Semestral", days: "180 dias", price: "99.99 MXN" },
           ].map((p) => (
             <div key={p.title} style={{ textAlign: "center" }}>
               <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{p.title}</p>
               <p style={{ fontSize: 12, color: "var(--clr-grey-600)", margin: "4px 0 8px" }}>{p.days}</p>
               <p style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>{p.price}</p>
               <button
-                onClick={() => handleSubscribe(p.title as any, p.cents)}
+                onClick={() => handleSubscribe(p.title as any, p.price)}
                 disabled={processing}
                 style={{
                   width: "100%",
@@ -129,7 +104,7 @@ export default function PremiumPage() {
                   boxShadow: "0 10px 20px rgba(255,107,107,0.4)",
                 }}
               >
-                {processing ? "..." : "💳 Pagar"}
+                💳 Pagar
               </button>
             </div>
           ))}

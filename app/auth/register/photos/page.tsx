@@ -80,7 +80,7 @@ export default function PhotosPage() {
   };
 
   return (
-    <div className="mobile-shell" style={{ background: "#fff" }}>
+    <div className="mobile-shell" style={{ background: "#fff", paddingBottom: 50 }}>
       <div className="scroll-body">
         <button className="back-btn" onClick={() => router.back()}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>

@@ -346,30 +346,7 @@ export default function StartPage() {
             pointerEvents: "none", // Permite tocar la carta a través del espacio vacío
             paddingBottom: "env(safe-area-inset-bottom, 0px)" // Respetar la barra de inicio de iPhone
           }}
-        >
-          {isPremium && (
-            <button
-              onClick={() => showToast("Función de retroceder próximamente")}
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: "50%",
-                border: "none",
-                background: "#fff",
-                color: "var(--clr-grey-700)",
-                fontSize: 20,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
-                pointerEvents: "auto",
-              }}
-            >
-              ↶
-            </button>
-          )}
-          
+        > 
           <button
             onClick={() => handleSwipe("left")}
             style={{
