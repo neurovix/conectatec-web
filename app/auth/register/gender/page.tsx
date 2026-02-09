@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRegister } from "@/utils/registerContext";
 
-const OPTIONS = ["Hombre", "Mujer", "Otro / Prefiero no decirlo"];
+const OPTIONS = ["Hombre", "Mujer", "Prefiero no decirlo"];
 
 export default function GenderPage() {
   const router  = useRouter();

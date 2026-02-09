@@ -53,6 +53,8 @@ export default function PasswordPage() {
 
   const ok = password.trim().length >= 6;
 
+  console.log(data);
+
   /* ── main registration flow ── */
   const handleRegister = async () => {
     if (!ok) return;
@@ -79,6 +81,7 @@ export default function PasswordPage() {
 
       /* 3. Insert user row */
       const { error: userErr } = await supabase.from("users").insert({
+        id_user:           userId,
         name:              data.name,
         age:               data.age,
         description:       data.description ?? null,
@@ -91,7 +94,11 @@ export default function PasswordPage() {
         id_interest:       INTEREST_MAP[data.interest!],
         is_premium:        false,
       });
-      if (userErr) throw userErr;
+
+      if (userErr) {
+        console.log("Error inserting user row:", userErr);
+        throw userErr;
+      }
 
       /* 4. Insert habits */
       if (data.habits && data.habits.length > 0) {
@@ -129,8 +136,7 @@ export default function PasswordPage() {
 
       /* 6. Done – go to premium upsell (placeholder → home for now) */
       reset();
-      router.replace("/home/premium");
-
+      router.replace("/home/start");
     } catch (e: any) {
       showToast(e?.message ?? "Error durante el registro");
     } finally {

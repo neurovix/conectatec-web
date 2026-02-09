@@ -38,7 +38,7 @@ export default function PremiumPage() {
   }
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", background: "linear-gradient(135deg, #fce4ec, #fff, #f3e5f5)", paddingBottom: 20 }}>
+    <div style={{ height: "100%", overflowY: "auto", background: "linear-gradient(135deg, #fce4ec, #fff, #f3e5f5)", paddingBottom: 100 }}>
       <div style={{ padding: 20 }}>
         {/* Back */}
         <button
@@ -88,7 +88,6 @@ export default function PremiumPage() {
           {[
             { label: "🔥 Likes diarios", normal: "30", premium: "Ilimitados" },
             { label: "💖 Ver a quién le gustas", normal: "❌", premium: "✅" },
-            { label: "⮐️ Retroceder perfiles", normal: "❌", premium: "✅" },
             { label: "✏️ Editar perfil", normal: "❌", premium: "✅" },
             { label: "🙈 Alerta de match", normal: "❌", premium: "✅" },
           ].map((b, i) => (
@@ -106,9 +105,9 @@ export default function PremiumPage() {
         {/* Plans */}
         <div style={{ background: "#fff", borderRadius: 20, padding: 20, marginTop: 30, boxShadow: "0 10px 20px rgba(0,0,0,0.08)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           {[
-            { title: "Semanal", days: "7 dias", price: "20 MXN", cents: 2000 },
-            { title: "Mensual", days: "30 dias", price: "50 MXN", cents: 5000 },
-            { title: "Semestral", days: "180 dias", price: "100 MXN", cents: 10000 },
+            { title: "Semanal", days: "7 dias", price: "19.99 MXN", cents: 2000 },
+            { title: "Mensual", days: "30 dias", price: "59.99 MXN", cents: 5000 },
+            { title: "Semestral", days: "180 dias", price: "99.99 MXN", cents: 10000 },
           ].map((p) => (
             <div key={p.title} style={{ textAlign: "center" }}>
               <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{p.title}</p>

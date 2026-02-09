@@ -157,7 +157,7 @@ export default function ProfilePage() {
   return (
     <div style={{ height: "100%", overflowY: "auto", background: "var(--clr-grey-50)", paddingBottom: 80 }}>
       {/* AppBar */}
-      <div style={{ background: "linear-gradient(135deg, var(--clr-red-900), var(--clr-red-800))", padding: "env(safe-area-inset-top, 12px) 0 16px", textAlign: "center" }}>
+      <div style={{ background: "linear-gradient(135deg, var(--clr-red-900), var(--clr-red-800))", padding: "20px 0px", textAlign: "center" }}>
         <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: 0 }}>Mi Perfil</h1>
       </div>
 

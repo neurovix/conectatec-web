@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useRegister } from "@/utils/registerContext";
 
 const HABITS = [
-  "Siempre escuchando música", "Gym", "Amigable", "Cafe lover",
+  "Siempre escuchando musica", "Gym", "Amigable", "Coffe lover",
   "Extrovertido", "Procrastinador", "Organizado", "Team nocturno",
-  "Introvertido", "Fan del descanso", "Team madrugador", "Foráneo",
-  "Todo el día en el tec", "Me quedo a actividades", "Ingeniero",
+  "Introvertido", "Fan del descanso", "Team madrugador", "Foraneo",
+  "Todo el dia en el tec", "Me quedo a actividades", "Ingeniero",
   "Busco ride", "Recursando", "Sin dinero", "Entro a todas las clases",
 ];
 
