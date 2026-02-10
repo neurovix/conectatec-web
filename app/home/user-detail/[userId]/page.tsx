@@ -262,7 +262,7 @@ export default function UserDetailPage() {
 
       {/* Action buttons */}
       {showButtons && (
-        <div style={{ position: "fixed", bottom: 30, left: 0, right: 0, display: "flex", gap: 24, justifyContent: "center", padding: "0 40px" }}>
+        <div style={{ position: "fixed", bottom: 30, left: 0, right: 0, display: "flex", gap: 24, justifyContent: "center", padding: "0 40px", paddingBottom: 80 }}>
           <button
             onClick={() => router.back()}
             style={{
