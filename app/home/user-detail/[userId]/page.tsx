@@ -88,42 +88,101 @@ export default function UserDetailPage() {
   }
 
   async function onLike() {
-    const supabase = createClient();
-    const myId = (await supabase.auth.getUser()).data.user?.id;
-    if (!myId) return;
+  console.log("➡️ onLike() iniciado");
 
-    try {
-      // Check duplicate
-      const { data: existing } = await supabase.from("user_likes").select("id_like").eq("id_user_from", myId).eq("id_user_to", userId).maybeSingle();
-      if (existing) {
-        showToast("Ya has dado like a este usuario");
+  const supabase = createClient();
+  console.log("✅ Supabase client creado");
+
+  const userRes = await supabase.auth.getUser();
+  const myId = userRes.data.user?.id;
+
+  console.log("👤 Usuario autenticado:", userRes);
+  console.log("🆔 myId:", myId);
+
+  if (!myId) {
+    console.log("❌ No hay usuario autenticado");
+    return;
+  }
+
+  try {
+    // Check duplicate
+    console.log("🔍 Verificando like duplicado:", { from: myId, to: userId });
+
+    const { data: existing, error: existingError } =
+      await supabase
+        .from("user_likes")
+        .select("id_like")
+        .eq("id_user_from", myId)
+        .eq("id_user_to", userId)
+        .maybeSingle();
+
+    console.log("📦 Resultado duplicate check:", { existing, existingError });
+
+    if (existing) {
+      console.log("⚠️ Like duplicado detectado");
+      showToast("Ya has dado like a este usuario");
+      return;
+    }
+
+    // Check limit
+    if (!isPremium) {
+      console.log("🚫 Usuario NO premium, verificando límite de likes");
+
+      const canSwipe = await supabase.rpc("check_and_add_swipe", {
+        p_user_id: myId,
+      });
+
+      console.log("📊 Resultado check_and_add_swipe:", canSwipe);
+
+      if (!canSwipe) {
+        console.log("⛔ Likes agotados");
+        showToast("Likes agotados. Vuélvete premium o espera hasta mañana");
         return;
       }
-
-      // Check limit
-      if (!isPremium) {
-        const canSwipe = await supabase.rpc("check_and_add_swipe", { p_user_id: myId });
-        if (!canSwipe) {
-          showToast("Likes agotados. Vuélvete premium o espera hasta mañana");
-          return;
-        }
-      }
-
-      // Insert like
-      await supabase.from("user_likes").upsert({ id_user_from: myId, id_user_to: userId }, { onConflict: "id_user_from,id_user_to" });
-
-      // Create match if mutual
-      await supabase.rpc("create_match_if_mutual_like", { p_user_a: myId, p_user_b: userId });
-
-      if (source === "likes") {
-        showToast(`¡Es un Match! Tú y ${user?.name} se gustan mutuamente 💖`);
-      }
-
-      router.back();
-    } catch {
-      showToast("Error al dar like");
+    } else {
+      console.log("⭐ Usuario premium, sin límite de likes");
     }
+
+    // Insert like
+    console.log("💾 Insertando like:", { from: myId, to: userId });
+
+    const { error: insertError } = await supabase
+      .from("user_likes")
+      .upsert(
+        { id_user_from: myId, id_user_to: userId },
+        { onConflict: "id_user_from,id_user_to" }
+      );
+
+    console.log("✅ Resultado insert like:", insertError ?? "OK");
+
+    if (insertError) throw insertError;
+
+    // Create match if mutual
+    console.log("💘 Verificando match mutuo");
+
+    const { data: matchData, error: matchError } =
+      await supabase.rpc("create_match_if_mutual_like", {
+        p_user_a: myId,
+        p_user_b: userId,
+      });
+
+    console.log("🤝 Resultado create_match_if_mutual_like:", {
+      matchData,
+      matchError,
+    });
+
+    if (source === "likes") {
+      console.log("🎉 Match desde pantalla de likes");
+      showToast(`¡Es un Match! Tú y ${user?.name} se gustan mutuamente 💖`);
+    }
+
+    console.log("🔙 Regresando con router.back()");
+    router.back();
+  } catch (err) {
+    console.error("🔥 Error en onLike():", err);
+    showToast("Error al dar like");
   }
+}
 
   if (loading) {
     return (

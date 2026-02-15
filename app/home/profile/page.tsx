@@ -23,8 +23,16 @@ export default function ProfilePage() {
   const [showCreatorsModal, setShowCreatorsModal] = useState(false);
 
   const creators = [
-    { name: "Fernando Vazquez", email: "fervazquez@neurovix.com.mx", role: "Fundador y Programador" },
-    { name: "Octavio Valdes", email: "ovaldesfigueroa@gmail.com", role: "Marketing" },
+    {
+      name: "Fernando Vazquez",
+      email: "fervazquez@neurovix.com.mx",
+      role: "Fundador y Programador",
+    },
+    {
+      name: "Octavio Valdes",
+      email: "ovaldesfigueroa@gmail.com",
+      role: "Marketing",
+    },
   ];
 
   useEffect(() => {
@@ -39,10 +47,12 @@ export default function ProfilePage() {
 
       const { data } = await supabase
         .from("users")
-        .select(`
+        .select(
+          `
           name, age, description, instagram_user, id_gender, id_degree, custom_degree, id_interest, is_premium,
           user_photos!inner(url, is_main)
-        `)
+        `,
+        )
         .eq("id_user", userId)
         .eq("user_photos.is_main", true)
         .single();
@@ -74,7 +84,10 @@ export default function ProfilePage() {
       const supabase = createClient();
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (!userId) return;
-      await supabase.from("users").update({ name: value }).eq("id_user", userId);
+      await supabase
+        .from("users")
+        .update({ name: value })
+        .eq("id_user", userId);
     } catch {
       showToast("Error al actualizar nombre");
     }
@@ -85,7 +98,10 @@ export default function ProfilePage() {
       const supabase = createClient();
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (!userId) return;
-      await supabase.from("users").update({ description: value }).eq("id_user", userId);
+      await supabase
+        .from("users")
+        .update({ description: value })
+        .eq("id_user", userId);
     } catch {
       showToast("Error al actualizar descripción");
     }
@@ -96,23 +112,66 @@ export default function ProfilePage() {
       const supabase = createClient();
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (!userId) return;
-      await supabase.from("users").update({ instagram_user: value }).eq("id_user", userId);
+      await supabase
+        .from("users")
+        .update({ instagram_user: value })
+        .eq("id_user", userId);
     } catch {
       showToast("Error al actualizar Instagram");
     }
   }
 
   async function deleteAccount() {
-    const confirm = window.confirm("Esta acción es permanente y eliminará toda tu información. ¿Estás seguro de que deseas continuar?");
-    if (!confirm) return;
+    const confirmDelete = window.confirm(
+      "Esta acción es permanente y eliminará toda tu información. ¿Estás seguro de que deseas continuar?",
+    );
+    if (!confirmDelete) return;
+
     try {
       const supabase = createClient();
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      if (!userId) return;
-      await supabase.rpc("delete_user_account", { p_user_id: userId });
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const userId = user.id;
+
+      const { data: files, error: listError } = await supabase.storage
+        .from("images")
+        .list(userId);
+
+      if (listError) {
+        console.log("Error listando archivos:", listError);
+        throw listError;
+      }
+
+      if (files && files.length > 0) {
+        const filePaths = files.map((file) => `${userId}/${file.name}`);
+
+        const { error: removeError } = await supabase.storage
+          .from("images")
+          .remove(filePaths);
+
+        if (removeError) {
+          console.log("Error eliminando archivos:", removeError);
+          throw removeError;
+        }
+      }
+
+      const { error: rpcError } = await supabase.rpc("delete_user_account");
+
+      if (rpcError) {
+        console.log("Error eliminando datos:", rpcError);
+        throw rpcError;
+      }
+
       await supabase.auth.signOut();
-      router.replace("/auth/login");
-    } catch {
+
+      router.replace("/auth/welcome");
+    } catch (error) {
+      console.error(error);
       showToast("Error al eliminar cuenta");
     }
   }
@@ -123,7 +182,11 @@ export default function ProfilePage() {
     router.replace("/auth/welcome");
   }
 
-  function showEditDialog(label: string, initial: string, onSave: (v: string) => void) {
+  function showEditDialog(
+    label: string,
+    initial: string,
+    onSave: (v: string) => void,
+  ) {
     const val = prompt(`Editar ${label}:`, initial);
     if (val !== null) {
       onSave(val);
@@ -141,7 +204,17 @@ export default function ProfilePage() {
 
   function getDegree(id: string): string {
     if (id === "9") return customDegree || "Otra";
-    const names = ["", "Ingeniería en Sistemas Computacionales", "Ingeniería Eléctrica", "Ingeniería Electrónica", "Ingeniería Industrial", "Ingeniería Mecánica", "Ingeniería Mecatrónica", "Ingeniería en Materiales", "Ingeniería en Gestión Empresarial"];
+    const names = [
+      "",
+      "Ingeniería en Sistemas Computacionales",
+      "Ingeniería Eléctrica",
+      "Ingeniería Electrónica",
+      "Ingeniería Industrial",
+      "Ingeniería Mecánica",
+      "Ingeniería Mecatrónica",
+      "Ingeniería en Materiales",
+      "Ingeniería en Gestión Empresarial",
+    ];
     return names[parseInt(id)] || "";
   }
 
@@ -153,18 +226,51 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "#fff" }}>
-        <div style={{ width: 40, height: 40, border: "4px solid var(--clr-grey-300)", borderTop: "4px solid var(--clr-pink)", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          background: "#fff",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "4px solid var(--clr-grey-300)",
+            borderTop: "4px solid var(--clr-pink)",
+            borderRadius: "50%",
+            animation: "spin .7s linear infinite",
+          }}
+        />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", background: "var(--clr-grey-50)", paddingBottom: 80 }}>
+    <div
+      style={{
+        height: "100%",
+        overflowY: "auto",
+        background: "var(--clr-grey-50)",
+        paddingBottom: 80,
+      }}
+    >
       {/* AppBar */}
-      <div style={{ background: "linear-gradient(135deg, var(--clr-red-900), var(--clr-red-800))", padding: "20px 0px", textAlign: "center" }}>
-        <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: 0 }}>Mi Perfil</h1>
+      <div
+        style={{
+          background:
+            "linear-gradient(135deg, var(--clr-red-900), var(--clr-red-800))",
+          padding: "20px 0px",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: 0 }}>
+          Mi Perfil
+        </h1>
       </div>
 
       <div style={{ padding: 20 }}>
@@ -172,7 +278,8 @@ export default function ProfilePage() {
         {!isPremium && (
           <div
             style={{
-              background: "linear-gradient(135deg, var(--clr-red-800), var(--clr-red-900))",
+              background:
+                "linear-gradient(135deg, var(--clr-red-800), var(--clr-red-900))",
               borderRadius: 20,
               padding: 24,
               marginBottom: 24,
@@ -180,11 +287,36 @@ export default function ProfilePage() {
               textAlign: "center",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                marginBottom: 8,
+              }}
+            >
               <span style={{ fontSize: 28 }}>👑</span>
-              <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: 1.2 }}>CONECTATEC PREMIUM</h2>
+              <h2
+                style={{
+                  color: "#fff",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  margin: 0,
+                  letterSpacing: 1.2,
+                }}
+              >
+                CONECTATEC PREMIUM
+              </h2>
             </div>
-            <p style={{ color: "#fff", fontSize: 14, fontWeight: 500, margin: "0 0 16px" }}>
+            <p
+              style={{
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 500,
+                margin: "0 0 16px",
+              }}
+            >
               Sube de nivel con cada acción que realices
             </p>
             <button
@@ -206,19 +338,84 @@ export default function ProfilePage() {
         )}
 
         {/* Avatar */}
-        <div style={{ height: 420, borderRadius: 28, overflow: "hidden", marginBottom: 24, boxShadow: "0 10px 20px rgba(0,0,0,0.25)", position: "relative" }}>
-          {photoUrl && <Image src={photoUrl} alt="Profile" fill style={{ objectFit: "cover" }} />}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%)" }} />
+        <div
+          style={{
+            height: 420,
+            borderRadius: 28,
+            overflow: "hidden",
+            marginBottom: 24,
+            boxShadow: "0 10px 20px rgba(0,0,0,0.25)",
+            position: "relative",
+          }}
+        >
+          {photoUrl && (
+            <Image
+              src={photoUrl}
+              alt="Profile"
+              fill
+              style={{ objectFit: "cover" }}
+            />
+          )}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%)",
+            }}
+          />
         </div>
 
         {/* Info section */}
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--clr-grey-800)", margin: "0 0 16px" }}>Información Personal</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+        <h3
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: "var(--clr-grey-800)",
+            margin: "0 0 16px",
+          }}
+        >
+          Información Personal
+        </h3>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            marginBottom: 24,
+          }}
+        >
           {[
-            { label: "Nombre", value: name, icon: "👤", editable: isPremium, onEdit: () => showEditDialog("nombre", name, updateName) },
-            { label: "Edad", value: age, icon: "🎂", editable: false, onEdit: () => {} },
-            { label: "Descripción", value: description, icon: "📝", editable: isPremium, onEdit: () => showEditDialog("descripción", description, updateDescription) },
-            { label: "Instagram", value: instagram, icon: "📷", editable: isPremium, onEdit: () => showEditDialog("Instagram", instagram, updateInstagram) },
+            {
+              label: "Nombre",
+              value: name,
+              icon: "👤",
+              editable: isPremium,
+              onEdit: () => showEditDialog("nombre", name, updateName),
+            },
+            {
+              label: "Edad",
+              value: age,
+              icon: "🎂",
+              editable: false,
+              onEdit: () => {},
+            },
+            {
+              label: "Descripción",
+              value: description,
+              icon: "📝",
+              editable: isPremium,
+              onEdit: () =>
+                showEditDialog("descripción", description, updateDescription),
+            },
+            {
+              label: "Instagram",
+              value: instagram,
+              icon: "📷",
+              editable: isPremium,
+              onEdit: () =>
+                showEditDialog("Instagram", instagram, updateInstagram),
+            },
           ].map((f) => (
             <div
               key={f.label}
@@ -234,44 +431,147 @@ export default function ProfilePage() {
                 cursor: f.editable ? "pointer" : "default",
               }}
             >
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--clr-red-900)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "var(--clr-red-900)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                }}
+              >
                 {f.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 12, color: "var(--clr-grey-600)", fontWeight: 500, margin: 0 }}>{f.label}</p>
-                <p style={{ fontSize: 16, fontWeight: 600, margin: "4px 0 0" }}>{f.value}</p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--clr-grey-600)",
+                    fontWeight: 500,
+                    margin: 0,
+                  }}
+                >
+                  {f.label}
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 600, margin: "4px 0 0" }}>
+                  {f.value}
+                </p>
               </div>
-              {!isPremium && <span style={{ fontSize: 22, color: "var(--clr-grey-500)" }}>🔒</span>}
-              {isPremium && f.editable && <span style={{ fontSize: 22, color: "var(--clr-red-900)" }}>✏️</span>}
+              {!isPremium && (
+                <span style={{ fontSize: 22, color: "var(--clr-grey-500)" }}>
+                  🔒
+                </span>
+              )}
+              {isPremium && f.editable && (
+                <span style={{ fontSize: 22, color: "var(--clr-red-900)" }}>
+                  ✏️
+                </span>
+              )}
             </div>
           ))}
         </div>
 
         {/* Preferences */}
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--clr-grey-800)", margin: "0 0 16px" }}>Preferencias</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+        <h3
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: "var(--clr-grey-800)",
+            margin: "0 0 16px",
+          }}
+        >
+          Preferencias
+        </h3>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            marginBottom: 24,
+          }}
+        >
           {[
             { label: "Género", value: getGender(gender), icon: "⚧" },
             { label: "Carrera", value: getDegree(degree), icon: "🎓" },
-            { label: "Interesado en", value: getInterest(interest), icon: "💖" },
+            {
+              label: "Interesado en",
+              value: getInterest(interest),
+              icon: "💖",
+            },
           ].map((f) => (
-            <div key={f.label} style={{ background: "#fff", borderRadius: 16, padding: 16, display: "flex", alignItems: "center", gap: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--clr-red-900)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+            <div
+              key={f.label}
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "var(--clr-red-900)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                }}
+              >
                 {f.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 12, color: "var(--clr-grey-600)", fontWeight: 500, margin: 0 }}>{f.label}</p>
-                <p style={{ fontSize: 16, fontWeight: 700, margin: "4px 0 0" }}>{f.value}</p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--clr-grey-600)",
+                    fontWeight: 500,
+                    margin: 0,
+                  }}
+                >
+                  {f.label}
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 700, margin: "4px 0 0" }}>
+                  {f.value}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Actions */}
-        <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+            marginBottom: 24,
+          }}
+        >
           {[
-            { label: "Cerrar sesión", sub: "Salir de la aplicación", icon: "🚪", color: "var(--clr-red-900)", onClick: signOut },
-            { label: "Eliminar cuenta", sub: "Sin cuenta atrás", icon: "🗑️", color: "var(--clr-red-900)", onClick: deleteAccount },
+            {
+              label: "Cerrar sesión",
+              sub: "Salir de la aplicación",
+              icon: "🚪",
+              color: "var(--clr-red-900)",
+              onClick: signOut,
+            },
+            {
+              label: "Eliminar cuenta",
+              sub: "Sin cuenta atrás",
+              icon: "🗑️",
+              color: "var(--clr-red-900)",
+              onClick: deleteAccount,
+            },
           ].map((a, i) => (
             <div key={i}>
               <button
@@ -288,22 +588,66 @@ export default function ProfilePage() {
                   textAlign: "left",
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${a.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: `${a.color}15`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                  }}
+                >
                   {a.icon}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 16, fontWeight: 600, color: a.color, margin: 0 }}>{a.label}</p>
-                  <p style={{ fontSize: 13, color: "var(--clr-grey-600)", margin: "2px 0 0" }}>{a.sub}</p>
+                  <p
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: a.color,
+                      margin: 0,
+                    }}
+                  >
+                    {a.label}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "var(--clr-grey-600)",
+                      margin: "2px 0 0",
+                    }}
+                  >
+                    {a.sub}
+                  </p>
                 </div>
-                <span style={{ fontSize: 20, color: "var(--clr-grey-400)" }}>›</span>
+                <span style={{ fontSize: 20, color: "var(--clr-grey-400)" }}>
+                  ›
+                </span>
               </button>
-              {i === 0 && <div style={{ height: 1, background: "var(--clr-grey-200)", margin: "0 16px" }} />}
+              {i === 0 && (
+                <div
+                  style={{
+                    height: 1,
+                    background: "var(--clr-grey-200)",
+                    margin: "0 16px",
+                  }}
+                />
+              )}
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: "center", color: "var(--clr-grey-500)", fontSize: 12 }}>
+        <div
+          style={{
+            textAlign: "center",
+            color: "var(--clr-grey-500)",
+            fontSize: 12,
+          }}
+        >
           <p style={{ margin: 0 }}>Version 1.0.0</p>
           <p style={{ margin: "4px 0 0" }}>
             © {new Date().getFullYear()} Aplicación creada por{" "}
@@ -354,8 +698,24 @@ export default function ProfilePage() {
             }}
           >
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--clr-grey-800)", margin: 0 }}>Equipo Neurovix</h2>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 20,
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: "var(--clr-grey-800)",
+                  margin: 0,
+                }}
+              >
+                Equipo Neurovix
+              </h2>
               <button
                 onClick={() => setShowCreatorsModal(false)}
                 style={{
@@ -377,7 +737,14 @@ export default function ProfilePage() {
             </div>
 
             {/* Creadores */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
               {creators.map((creator, index) => (
                 <div
                   key={index}
@@ -388,8 +755,26 @@ export default function ProfilePage() {
                     border: "1px solid var(--clr-grey-200)",
                   }}
                 >
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--clr-grey-800)", margin: "0 0 4px" }}>{creator.name}</h3>
-                  <p style={{ fontSize: 14, color: "var(--clr-red-900)", fontWeight: 600, margin: "0 0 8px" }}>{creator.role}</p>
+                  <h3
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "var(--clr-grey-800)",
+                      margin: "0 0 4px",
+                    }}
+                  >
+                    {creator.name}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "var(--clr-red-900)",
+                      fontWeight: 600,
+                      margin: "0 0 8px",
+                    }}
+                  >
+                    {creator.role}
+                  </p>
                   <a
                     href={`mailto:${creator.email}`}
                     style={{
@@ -412,7 +797,8 @@ export default function ProfilePage() {
               onClick={() => window.open("https://neurovix.com.mx", "_blank")}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, var(--clr-red-800), var(--clr-red-900))",
+                background:
+                  "linear-gradient(135deg, var(--clr-red-800), var(--clr-red-900))",
                 color: "#fff",
                 border: "none",
                 borderRadius: 16,
