@@ -10,7 +10,7 @@
 
 **ConectaTec** es una aplicación web estilo Tinder diseñada exclusivamente para los estudiantes del Tecnológico Nacional de México Campus Saltillo. Permite a los estudiantes conectarse entre sí de manera sencilla e intuitiva, fomentando la comunidad y las relaciones dentro del campus.
 
-Desarrollada por **[Neurovix S de RL de CV](https://neurovix.mx)**.
+Desarrollada por **[Neurovix S de RL de CV](https://neurovix.com.mx)**.
 
 ---
 
